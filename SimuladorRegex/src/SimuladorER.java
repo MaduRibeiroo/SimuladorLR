@@ -120,7 +120,7 @@ public class SimuladorER {
                 anterior = tokens.get(i-1);
             if (atual.endsWith("*")) {
                 minimo += 0;      // pode gerar 0 símbolos
-                maximo = Integer.MAX_VALUE; // ilimitado
+                maximo = 1000; // ilimitado
             }
             else {
                 minimo++;
@@ -132,14 +132,33 @@ public class SimuladorER {
             }
         }
         // adiciona último token
-        resultado.append("{").append(minimo).append("}");
-        if(minimo!=maximo){
-            resultado.append("{").append(minimo).append(maximo).append("}");
+        if (minimo == maximo) {
+            resultado.append("{").append(minimo).append("}");
+        } else {
+            resultado.append("{").append(minimo).append(",").append(maximo).append("}");
         }
 
         // adiciona ^ e $ para regex completa
         return "^" + resultado.toString() + "$";
     }
+
+    public static int verificarPonto(String er){
+        char c;
+        boolean flag=true;
+        for(int i=0;i<er.length();i++){
+            c = er.charAt(i);
+            if((c==')' || c=='*') && i+1<er.length()){
+                if(er.charAt(i+1)!='.' && er.charAt(i+1)!='|' && er.charAt(i+1)!='*'){
+                    flag=false;
+                    System.out.println("Expressão inválida: nao há '.' ou '+' após ')'/'*' .\nTente novamente.\n");
+                }
+            }
+        }
+        if(flag==false)
+            return 1;
+        return 0;
+    }
+
 
     // Converte ER do formato do anexo para regex Java (remove concatenação '.')
     public static String converterER(String er) {
@@ -149,16 +168,18 @@ public class SimuladorER {
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
         //int erVerificada;
-        String erPadronizada, erEntrada;
+        String erPadronizada, erEntrada, verificacao;
+
+
 
        do{
             System.out.println("Digite a expressão regular (ex: (a|b).(a|b).(a|b)):");
             erEntrada = scanner.nextLine();
             erPadronizada = padronizarER(erEntrada);
 
-        }while(verificarParenteses(erPadronizada)==1);
+        }while(verificarPonto(erEntrada)==1 || verificarParenteses(erPadronizada)==1);
 
-       while(verificarERGeral(erPadronizada) == 1){
+       while(verificarPonto(erEntrada)==1 || verificarERGeral(erPadronizada) == 1 ){
            System.out.println("Digite a expressão regular (ex: (a|b).(a|b).(a|b)):");
            erEntrada = scanner.nextLine();
            erPadronizada = padronizarER(erEntrada);
