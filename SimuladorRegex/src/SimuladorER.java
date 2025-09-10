@@ -107,31 +107,34 @@ public class SimuladorER {
     // Conta repetições consecutivas e gera forma abreviada com {n}
     // Exemplo: ["(a|b)", "(a|b)", "(a|b)*", "(a|b)*"] -> (a|b){2}(a|b)*{2}
     public static String gerarFormaAbreviada(ArrayList<String> tokens) {
-        if (tokens.isEmpty()) return "";
+        if (tokens.isEmpty())
+            return "";
 
         StringBuilder resultado = new StringBuilder();
+        int minimo=0, maximo=0;
+        String anterior="", atual;
 
-        String atual = tokens.get(0);
-        int contador = 1;
+        for (int i = 0; i < tokens.size(); i++) {
+            atual = tokens.get(i);
+            if(i-1>=0)
+                anterior = tokens.get(i-1);
+            if (atual.endsWith("*")) {
+                minimo += 0;      // pode gerar 0 símbolos
+                maximo = Integer.MAX_VALUE; // ilimitado
+            }
+            else {
+                minimo++;
+                maximo++;
+            }
 
-        for (int i = 1; i < tokens.size(); i++) {
-            String proximo = tokens.get(i);
-            if (proximo.equals(atual)) {
-                contador++;
-            } else {
-                // adiciona token atual com contador
+            if(!atual.equals(anterior) || i==0) {
                 resultado.append(atual);
-                if (contador > 1) {
-                    resultado.append("{").append(contador).append("}");
-                }
-                atual = proximo;
-                contador = 1;
             }
         }
         // adiciona último token
-        resultado.append(atual);
-        if (contador > 1) {
-            resultado.append("{").append(contador).append("}");
+        resultado.append("{").append(minimo).append("}");
+        if(minimo!=maximo){
+            resultado.append("{").append(minimo).append(maximo).append("}");
         }
 
         // adiciona ^ e $ para regex completa
@@ -155,12 +158,11 @@ public class SimuladorER {
 
         }while(verificarParenteses(erPadronizada)==1);
 
-       do{
+       while(verificarERGeral(erPadronizada) == 1){
            System.out.println("Digite a expressão regular (ex: (a|b).(a|b).(a|b)):");
            erEntrada = scanner.nextLine();
            erPadronizada = padronizarER(erEntrada);
-
-       }while(verificarERGeral(erPadronizada) == 1);
+       }
 
                 ArrayList<String> tokens = dividirTokens(erPadronizada);
 
