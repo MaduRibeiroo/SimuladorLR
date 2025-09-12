@@ -111,31 +111,15 @@ public class SimuladorER {
             return "";
 
         StringBuilder resultado = new StringBuilder();
-        int minimo=0, maximo=0;
-        String anterior="", atual;
 
-        for (int i = 0; i < tokens.size(); i++) {
-            atual = tokens.get(i);
-            if(i-1>=0)
-                anterior = tokens.get(i-1);
-            if (atual.endsWith("*")) {
-                minimo += 0;      // pode gerar 0 símbolos
-                maximo = 1000; // ilimitado
+        for (String t : tokens) {
+            // Se o token termina com '*', mantemos ele como está (0 ou mais)
+            if (t.endsWith("*")) {
+                resultado.append(t);
+            } else {
+                // Token simples (letra ou grupo sem *) → concatena como está
+                resultado.append(t);
             }
-            else {
-                minimo++;
-                maximo++;
-            }
-
-            if(!atual.equals(anterior) || i==0) {
-                resultado.append(atual);
-            }
-        }
-        // adiciona último token
-        if (minimo == maximo) {
-            resultado.append("{").append(minimo).append("}");
-        } else {
-            resultado.append("{").append(minimo).append(",").append(maximo).append("}");
         }
 
         // adiciona ^ e $ para regex completa
@@ -159,6 +143,65 @@ public class SimuladorER {
         return 0;
     }
 
+    // Extrai o alfabeto a partir da ER de entrada
+    public static String extrairAlfabeto(String er) {
+        StringBuilder alfabeto = new StringBuilder();
+        for (int i = 0; i < er.length(); i++) {
+            char c = er.charAt(i);
+            // considera letras e dígitos como símbolos terminais
+            if (Character.isLetterOrDigit(c) && alfabeto.indexOf(String.valueOf(c)) == -1) {
+                alfabeto.append(c);
+            }
+        }
+        return alfabeto.toString();
+    }
+
+    // Gera as 10 primeiras cadeias aceitas
+    public static void gerarCadeiasAceitas(Pattern pattern, String alfabeto, int maxComprimento) {
+        ArrayList<String> aceitas = new ArrayList<>();
+        gerarRecursivo("", pattern, alfabeto, maxComprimento, aceitas);
+
+        System.out.println("\nPrimeiras cadeias aceitas pela expressão:");
+        if (aceitas.isEmpty()) {
+            System.out.println("Nenhuma cadeia encontrada até o limite definido.");
+            return;
+        }
+
+        int limite = Math.min(10, aceitas.size());
+        for (int i = 0; i < limite; i++) {
+            System.out.println((i+1) + ": " + aceitas.get(i));
+        }
+    }
+
+    private static void gerarRecursivo(String prefixo, Pattern pattern, String alfabeto,
+                                       int maxComprimento, ArrayList<String> aceitas) {
+        // Se já atingiu 10 cadeias aceitas, não adiciona mais
+        if (aceitas.size() < 10) {
+            Matcher m = pattern.matcher(prefixo);
+            if (m.matches()) {
+                // Se o prefixo for vazio ou "ezinho", considera como ε
+                if (prefixo.isEmpty() || prefixo.equals("ezinho")) {
+                    if (!aceitas.contains("ε")) { // evita duplicados
+                        aceitas.add("ε");
+                    }
+                } else {
+                    if (!aceitas.contains(prefixo)) {
+                        aceitas.add(prefixo);
+                    }
+                }
+            }
+        }
+
+        // Continua gerando mais cadeias, desde que o comprimento máximo não seja atingido
+        if (prefixo.length() < maxComprimento) {
+            for (int i = 0; i < alfabeto.length(); i++) {
+                gerarRecursivo(prefixo + alfabeto.charAt(i), pattern, alfabeto, maxComprimento, aceitas);
+            }
+        }
+    }
+
+
+
 
     // Converte ER do formato do anexo para regex Java (remove concatenação '.')
     public static String converterER(String er) {
@@ -170,16 +213,14 @@ public class SimuladorER {
         //int erVerificada;
         String erPadronizada, erEntrada, verificacao;
 
-
-
        do{
             System.out.println("Digite a expressão regular (ex: (a|b).(a|b).(a|b)):");
             erEntrada = scanner.nextLine();
             erPadronizada = padronizarER(erEntrada);
 
-        }while(verificarPonto(erEntrada)==1 || verificarParenteses(erPadronizada)==1);
+        }while( verificarParenteses(erPadronizada)==1);
 
-       while(verificarPonto(erEntrada)==1 || verificarERGeral(erPadronizada) == 1 ){
+       while( verificarERGeral(erPadronizada) == 1 ){
            System.out.println("Digite a expressão regular (ex: (a|b).(a|b).(a|b)):");
            erEntrada = scanner.nextLine();
            erPadronizada = padronizarER(erEntrada);
@@ -206,6 +247,9 @@ public class SimuladorER {
                     scanner.close();
                     return;
                 }
+
+                String alfabeto = extrairAlfabeto(erEntrada);
+                gerarCadeiasAceitas(pattern, alfabeto, 10);
 
                 while (true) {
                     System.out.println("\nDigite uma palavra para testar (ou 'sair' para encerrar):");
